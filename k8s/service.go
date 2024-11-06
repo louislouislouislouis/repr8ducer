@@ -31,16 +31,12 @@ func (s *K8sService) ListNamespace() (*v1.NamespaceList, error) {
 	return tests, err
 }
 
-func (s *K8sService) ListPodsInNamespace(nms string) error {
+func (s *K8sService) ListPodsInNamespace(nms string) (*v1.PodList, error) {
 	pods, err := s.Client.CoreV1().Pods(nms).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		panic(err.Error())
 	}
-
-	for _, pod := range pods.Items {
-		fmt.Println(pod.Name)
-	}
-	return err
+	return pods, err
 }
 
 func (s *K8sService) Exec() error {
@@ -85,10 +81,6 @@ func (s *K8sService) Exec() error {
 		return err
 	}
 	test3 := buf.String()
-	test4 := buf2.String()
-
-	fmt.Println(test3)
-	fmt.Println(test4)
 
 	// Analyse du YAML
 	var data map[string]interface{}
