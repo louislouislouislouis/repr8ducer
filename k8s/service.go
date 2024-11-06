@@ -39,13 +39,24 @@ func (s *K8sService) ListPodsInNamespace(nms string) (*v1.PodList, error) {
 	return pods, err
 }
 
-func (s *K8sService) Exec() error {
+func (s *K8sService) GetPod(nms, podName string) (*v1.Pod, error) {
+  pod, err := s.Client.CoreV1().Pods(nms).Get(context.TODO(), podName, metav1.GetOptions{
+
+  })
+  if err != nil {
+    panic(err.Error())
+  }
+  pod.Spec.Containers[0].
+  return pod, err
+}
+
+func (s *K8sService) Exec(nms, podName string) (string, error) {
 	req := s.Client.CoreV1().
 		RESTClient().
 		Post().
 		Resource("pods").
-		Name("metering-66cfb8bc6b-frkfj").
-		Namespace("kiwios-cloud-metering").
+		Name(podName).
+		Namespace(nms).
 		SubResource("exec")
 	req.VersionedParams(&v1.PodExecOptions{
 		Container: "metering",
@@ -66,7 +77,7 @@ func (s *K8sService) Exec() error {
 
 	fmt.Println(req.URL())
 	if err != nil {
-		return err
+		return "", err
 	}
 	buf := &bytes.Buffer{}
 	buf2 := &bytes.Buffer{}
@@ -78,7 +89,7 @@ func (s *K8sService) Exec() error {
 		Stderr: buf2,
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
 	test3 := buf.String()
 
@@ -93,9 +104,9 @@ func (s *K8sService) Exec() error {
 	flattened := flattenYaml("", data)
 
 	// Impression du résultat
-	fmt.Println(strings.Join(flattened, "\n"))
+	// fmt.Println(strings.Join(flattened, "\n"))
 
-	return nil
+	return strings.Join(flattened, "\n"), nil
 }
 
 // Fonction pour transformer une structure en slice de string

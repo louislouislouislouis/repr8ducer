@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	v1 "k8s.io/api/core/v1"
@@ -56,7 +57,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.namespace == "" {
 				return m.onNamespaceSelection()
 			}
-			return m.onPodSelection()
+			if m.pod == "" {
+				return m.onPodSelection()
+			}
 		}
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
@@ -85,5 +88,11 @@ func (m model) onNamespaceSelection() (tea.Model, tea.Cmd) {
 
 func (m model) onPodSelection() (tea.Model, tea.Cmd) {
 	m.pod = m.listPods.Items()[m.listPods.Index()].(DisplayedItem).title
-	return m, nil
+	strcmd, _ := m.k8sService.Exec(m.namespace, m.pod)
+
+	// Copy command to copy paste buffer
+	// fmt.Println(strcmd)
+	clipboard.WriteAll(strcmd)
+
+	return m, tea.Quit
 }

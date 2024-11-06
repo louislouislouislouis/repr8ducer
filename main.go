@@ -18,7 +18,8 @@ func main() {
 		tea.WithAltScreen(),
 	)
 
-	if _, err := p.Run(); err != nil {
+	_, err := p.Run()
+	if err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
 	}
