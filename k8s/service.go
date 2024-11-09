@@ -40,14 +40,11 @@ func (s *K8sService) ListPodsInNamespace(nms string) (*v1.PodList, error) {
 }
 
 func (s *K8sService) GetPod(nms, podName string) (*v1.Pod, error) {
-  pod, err := s.Client.CoreV1().Pods(nms).Get(context.TODO(), podName, metav1.GetOptions{
-
-  })
-  if err != nil {
-    panic(err.Error())
-  }
-  pod.Spec.Containers[0].
-  return pod, err
+	pod, err := s.Client.CoreV1().Pods(nms).Get(context.TODO(), podName, metav1.GetOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+	return pod, err
 }
 
 func (s *K8sService) Exec(nms, podName string) (string, error) {

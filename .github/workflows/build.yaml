@@ -1,0 +1,53 @@
+name: Build and Test
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Setup Node.js environment
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Compile project
+      run: npm run build
+
+    - name: Run tests
+      run: npm test
+
+  version:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && contains(github.event.pull_request.title, '#major') || contains(github.event.pull_request.title, '#minor') || contains(github.event.pull_request.title, '#patch')
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: '0'
+
+    - name: Bump version and push tag
+      uses: anothrNick/github-tag-action@1.33.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        WITH_V: true
+        DEFAULT_BUMP: patch
+        RELEASE_BRANCHES: main
+        PRERELEASE_SUFFIX: rc
+        PRERELEASE: true
+        RELEASE_BRANCHES: main
+        RELEASE_TAG_NAME_PREFIX: 'v'
+        INITIAL_VERSION: 0.0.0
+        DRY_RUN: false
