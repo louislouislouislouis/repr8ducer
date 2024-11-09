@@ -47,7 +47,6 @@ jobs:
         RELEASE_BRANCHES: main
         PRERELEASE_SUFFIX: rc
         PRERELEASE: true
-        RELEASE_BRANCHES: main
         RELEASE_TAG_NAME_PREFIX: 'v'
         INITIAL_VERSION: 0.0.0
         DRY_RUN: false
