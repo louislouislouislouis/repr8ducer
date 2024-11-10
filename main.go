@@ -11,6 +11,7 @@ import (
 )
 
 func main() {
+	// dumm
 	p := tea.NewProgram(
 		ui.NewModel(k8s.GetService()),
 		tea.WithAltScreen(),
