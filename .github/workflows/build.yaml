@@ -8,45 +8,28 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: [ '1.19', '1.20', '1.21.x' ]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    - name: Setup Node.js environment
-      uses: actions/setup-node@v2
-      with:
-        node-version: '14'
-
-    - name: Install dependencies
-      run: npm install
-
-    - name: Compile project
-      run: npm run build
-
-    - name: Run tests
-      run: npm test
-
-  version:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && contains(github.event.pull_request.title, '#major') || contains(github.event.pull_request.title, '#minor') || contains(github.event.pull_request.title, '#patch')
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: '0'
-
-    - name: Bump version and push tag
-      uses: anothrNick/github-tag-action@1.33.0
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        WITH_V: true
-        DEFAULT_BUMP: patch
-        RELEASE_BRANCHES: main
-        PRERELEASE_SUFFIX: rc
-        PRERELEASE: true
-        RELEASE_TAG_NAME_PREFIX: 'v'
-        INITIAL_VERSION: 0.0.0
-        DRY_RUN: false
+      - uses: actions/checkout@v4
+      - name: Setup Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+      # You can test your matrix by printing the current Go version
+      - name: Display Go version
+        run: go version
+      - name: Install dependencies
+        run: |
+          go get .
+      - name: Build
+        run: go build -v ./...
+      - name: Test with Go
+        run: go test -json > TestResults-${{ matrix.go-version }}.json
+      - name: Upload Go test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: Go-results-${{ matrix.go-version }}
+          path: TestResults-${{ matrix.go-version }}.json
