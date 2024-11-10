@@ -1,6 +1,6 @@
 module github.com/louislouislouislouis/repr8ducer
 
-go 1.22.2
+go 1.22
 
 require (
 	github.com/charmbracelet/bubbles v0.20.0
