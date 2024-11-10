@@ -1,16 +1,11 @@
 name: Bump Beta version
 on:
   pull_request:
-    types:
-      - opened 
-      - synchronize
-      - reopened
     branches:
       - main
 
 jobs:
   build:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-22.04
     permissions:
       contents: write
