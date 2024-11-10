@@ -10,8 +10,6 @@ import (
 	"github.com/louislouislouislouis/repr8ducer/ui"
 )
 
-var DEFAULT_NAMESPACE = "things"
-
 func main() {
 	p := tea.NewProgram(
 		ui.NewModel(k8s.GetService()),
