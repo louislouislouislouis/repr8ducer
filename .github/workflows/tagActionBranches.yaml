@@ -1,4 +1,4 @@
-name: Bump version
+name: Bump Beta version
 on:
   pull_request:
     types:
