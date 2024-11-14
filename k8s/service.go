@@ -23,20 +23,11 @@ type K8sService struct {
 }
 
 func (s *K8sService) ListNamespace() (*v1.NamespaceList, error) {
-	tests, err := s.Client.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
-
-	// for _, test := range tests.Items {
-	// utils.Log.Debug().Msg(test.Name)
-	// }
-	return tests, err
+	return s.Client.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 }
 
 func (s *K8sService) ListPodsInNamespace(nms string) (*v1.PodList, error) {
-	pods, err := s.Client.CoreV1().Pods(nms).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		panic(err.Error())
-	}
-	return pods, err
+	return s.Client.CoreV1().Pods(nms).List(context.TODO(), metav1.ListOptions{})
 }
 
 func (s *K8sService) GetPod(nms, podName string) (*v1.Pod, error) {
@@ -45,6 +36,14 @@ func (s *K8sService) GetPod(nms, podName string) (*v1.Pod, error) {
 		panic(err.Error())
 	}
 	return pod, err
+}
+
+func (s *K8sService) GetContainerFromPods(podName, nms string) ([]v1.Container, error) {
+	pod, err := s.Client.CoreV1().Pods(nms).Get(context.TODO(), podName, metav1.GetOptions{})
+	if err != nil {
+		return []v1.Container{}, err
+	}
+	return pod.Spec.Containers, err
 }
 
 func (s *K8sService) Exec(nms, podName string) (string, error) {

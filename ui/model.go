@@ -1,11 +1,11 @@
 package ui
 
 import (
-	"github.com/atotto/clipboard"
+	"fmt"
+
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	v1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/louislouislouislouis/repr8ducer/k8s"
 )
@@ -14,20 +14,62 @@ type model struct {
 	k8sService    *k8s.K8sService
 	namespace     string
 	pod           string
+	container     string
 	listNamespace list.Model
+	listContainer list.Model
 	listPods      list.Model
 }
 
-func NewModel(k8s *k8s.K8sService) model {
-	listeNamespace, _ := k8s.ListNamespace()
-	liste := createDisplayedListFromMetadata(listeNamespace.Items, func(nms v1.Namespace) metaV1.Object {
-		return &nms.ObjectMeta
-	})
+func NewModel(k8s *k8s.K8sService, namespace, podName, container string) model {
+	displayedNamespaceList := []list.Item{}
+	displayedPodList := []list.Item{}
+	displayedContainerList := []list.Item{}
+
+	fmt.Println(fmt.Sprintln(namespace == "", podName == "", container == ""))
+	if namespace == "" {
+		listNamespace, _ := k8s.ListNamespace()
+		displayedNamespaceList = createDisplayedListFromMetadata(
+			listNamespace.Items,
+			func(nms v1.Namespace) Descripable {
+				return &descipableMeta{&nms.ObjectMeta}
+			},
+		)
+	}
+
+	fmt.Println(fmt.Sprintln(namespace == "", podName == "", container == ""))
+	if podName == "" && namespace != "" {
+		pods, err := k8s.ListPodsInNamespace(namespace)
+		if err != nil {
+			panic(err.Error())
+		}
+		displayedPodList = createDisplayedListFromMetadata(
+			pods.Items,
+			func(nms v1.Pod) Descripable {
+				return &descipableMeta{&nms.ObjectMeta}
+			},
+		)
+	}
+
+	fmt.Println(fmt.Sprintln(namespace == "", podName == "", container == ""))
+	if podName == "p" && namespace == "" && container == "" {
+
+		container, _ := k8s.GetContainerFromPods(podName, namespace)
+		displayedContainerList = createDisplayedListFromMetadata(
+			container,
+			func(container v1.Container) Descripable {
+				return &descipableContainer{container}
+			},
+		)
+	}
 
 	return model{
 		k8sService:    k8s,
-		listNamespace: list.New(liste, list.NewDefaultDelegate(), 0, 0),
-		listPods:      list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0),
+		pod:           podName,
+		namespace:     namespace,
+		container:     container,
+		listNamespace: list.New(displayedNamespaceList, list.NewDefaultDelegate(), 0, 0),
+		listPods:      list.New(displayedPodList, list.NewDefaultDelegate(), 0, 0),
+		listContainer: list.New(displayedContainerList, list.NewDefaultDelegate(), 0, 0),
 	}
 }
 
@@ -42,6 +84,10 @@ func (m model) View() string {
 
 	if m.pod == "" {
 		return docStyle.Render(m.listPods.View())
+	}
+
+	if m.container == "" {
+		return docStyle.Render(m.listContainer.View())
 	}
 
 	return "Namespace: " + m.namespace + " Pod: " + m.pod
@@ -64,14 +110,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
 		m.listNamespace.SetSize(msg.Width-h, msg.Height-v)
+		m.listContainer.SetSize(msg.Width-h, msg.Height-v)
 		m.listPods.SetSize(msg.Width-h, msg.Height-v)
 	}
 
-	var cmdNamespace, cmdPods tea.Cmd
+	var cmdNamespace, cmdPods, cmdContainer tea.Cmd
 	m.listNamespace, cmdNamespace = m.listNamespace.Update(msg)
 	m.listPods, cmdPods = m.listPods.Update(msg)
-
-	return m, tea.Batch(cmdPods, cmdNamespace)
+	m.listContainer, cmdContainer = m.listContainer.Update(msg)
+	return m, tea.Batch(cmdPods, cmdNamespace, cmdContainer)
 }
 
 func (m model) onNamespaceSelection() (tea.Model, tea.Cmd) {
@@ -80,19 +127,25 @@ func (m model) onNamespaceSelection() (tea.Model, tea.Cmd) {
 	if err != nil {
 		panic(err.Error())
 	}
-	cmd := m.listPods.SetItems(createDisplayedListFromMetadata(pods.Items, func(pod v1.Pod) metaV1.Object {
-		return &pod.ObjectMeta
-	}))
+	cmd := m.listPods.SetItems(
+		createDisplayedListFromMetadata(pods.Items, func(pod v1.Pod) Descripable {
+			return &descipableMeta{&pod}
+		}),
+	)
 	return m, cmd
 }
 
 func (m model) onPodSelection() (tea.Model, tea.Cmd) {
 	m.pod = m.listPods.Items()[m.listPods.Index()].(DisplayedItem).title
-	strcmd, _ := m.k8sService.Exec(m.namespace, m.pod)
+	// strcmd, _ := m.k8sService.Exec(m.namespace, m.pod)
+	container, _ := m.k8sService.GetContainerFromPods(m.pod, m.namespace)
+	displayedContainerList := createDisplayedListFromMetadata(
+		container,
+		func(c v1.Container) Descripable {
+			return &descipableContainer{c}
+		},
+	)
+	cmd := m.listContainer.SetItems(displayedContainerList)
 
-	// Copy command to copy paste buffer
-	// fmt.Println(strcmd)
-	clipboard.WriteAll(strcmd)
-
-	return m, tea.Quit
+	return m, cmd
 }
