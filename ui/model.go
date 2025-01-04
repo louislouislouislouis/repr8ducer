@@ -23,13 +23,14 @@ type size struct {
 	height int
 }
 type model struct {
-	columns    []column
-	mode       colType
-	statusline statusLine
-	k8sService *k8s.K8sService
-	spinner    spinner.Model
-	size       size
-	generator  *k8s.Generator
+	columns        []column
+	mode           colType
+	statusline     statusLine
+	modifierColumn modifierRecap
+	k8sService     *k8s.K8sService
+	spinner        spinner.Model
+	size           size
+	generator      *k8s.Generator
 }
 
 type ModelConfig struct {
@@ -86,11 +87,12 @@ func NewModel(k8sService *k8s.K8sService, c ModelConfig) model {
 	}
 	generator := k8s.NewDefaultGenerator(k8sService)
 	return model{
-		mode:       mode,
-		columns:    test,
-		k8sService: k8sService,
-		statusline: statusLine{},
-		generator:  generator,
+		mode:           mode,
+		columns:        test,
+		k8sService:     k8sService,
+		statusline:     statusLine{},
+		generator:      generator,
+		modifierColumn: modifierRecap{},
 	}
 }
 
@@ -148,9 +150,10 @@ func (m model) View() string {
 	for _, c := range m.columns {
 		renders = append(renders, c.View())
 	}
+	renders = append(renders, m.modifierColumn.View())
 	m.columns[m.mode].list.Help.Width = 444
 	return lipgloss.JoinVertical(
-		lipgloss.Center,
+		lipgloss.Left,
 		bigTitleStyle.Width(m.size.width).Render(title()),
 		lipgloss.JoinHorizontal(lipgloss.Left, renders...),
 		m.columns[m.mode].list.Help.View(m.columns[m.mode].list),
@@ -162,6 +165,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds := make([]tea.Cmd, len(m.columns))
 	switch msg := msg.(type) {
 
+	case urlDetectionMsg:
+		modifierColumn, cmd := m.modifierColumn.Update(msg)
+		m.modifierColumn = modifierColumn
+		return m, cmd
 	case infoMsg:
 		statusline, cmd := m.statusline.Update(msg)
 		m.statusline = statusline
@@ -186,7 +193,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "right":
 			return handleRightKey(m)
-
 		}
 
 	case tea.WindowSizeMsg:

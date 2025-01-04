@@ -36,6 +36,10 @@ type infoMsg struct {
 	status statusMsg
 }
 
+type urlDetectionMsg struct {
+	val    []string
+	status statusMsg
+}
 type podMsg struct {
 	val    podMsgValue
 	status statusMsg

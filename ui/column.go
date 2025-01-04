@@ -29,16 +29,18 @@ func (c column) View() string {
 	}
 
 	if c.isFocused {
-		return focusStyle.Render(text)
+		return focusStyle.Width(c.width).Render(text)
 	}
-	return unfocusStyle.Render(text)
+	return unfocusStyle.Width(c.width).Render(text)
 }
 
 func (c column) Update(msg tea.Msg) (column, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case tea.WindowSizeMsg:
-		c.list.SetSize((msg.Width-3*8)/3, msg.Height/2)
+		c.width = msg.Width / 4
+		c.height = msg.Height - 8
+		c.list.SetSize(c.width, c.height)
 
 	case listUpdateMsg:
 		c.isInitialized = true

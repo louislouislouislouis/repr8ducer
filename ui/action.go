@@ -2,7 +2,6 @@ package ui
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/list"
@@ -46,16 +45,21 @@ func (m model) onAction(a Action) (model, tea.Cmd) {
 		if err != nil {
 			utils.Log.Error().Msg(err.Error())
 			cmd = updateStatusLine(err.Error())
+			return m, cmd
 		}
 		if len(command.Modifiers) != 0 {
 			// TODO Open dialog
-			statusLine := ""
+			cmds := []tea.Cmd{}
 			for _, cmd := range command.Modifiers {
-				for _, url := range cmd.GetDetections() {
-					statusLine += fmt.Sprintf("%s \n", cmd.GetDetections()[url])
+				keys := make([]string, len(cmd.GetDetections()))
+				i := 0
+				for k := range cmd.GetDetections() {
+					keys[i] = k
+					i++
 				}
+				cmds = append(cmds, updateModifierRecap(keys))
 			}
-			return m, updateStatusLine(statusLine)
+			return m, tea.Batch(cmds...)
 		}
 		clipboard.WriteAll(command.GetCommand())
 		cmd = tea.Quit
