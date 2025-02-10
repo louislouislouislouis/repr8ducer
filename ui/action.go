@@ -47,6 +47,7 @@ func (m model) onAction(a Action) (model, tea.Cmd) {
 			cmd = updateStatusLine(err.Error())
 			return m, cmd
 		}
+		clipboard.WriteAll(command.GetCommand())
 		if len(command.Modifiers) != 0 {
 			// TODO Open dialog
 			cmds := []tea.Cmd{}
@@ -61,7 +62,6 @@ func (m model) onAction(a Action) (model, tea.Cmd) {
 			}
 			return m, tea.Batch(cmds...)
 		}
-		clipboard.WriteAll(command.GetCommand())
 		cmd = tea.Quit
 
 	case namespaceSelect:

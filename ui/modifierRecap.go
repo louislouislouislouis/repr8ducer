@@ -43,7 +43,6 @@ func (m modifierRecap) View() string {
 			b.WriteRune('\n')
 		}
 	}
-	m.inputs[0].SetSuggestions([]string{"a", "b", "c"})
 	return text + b.String()
 }
 
