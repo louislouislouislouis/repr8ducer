@@ -1,4 +1,4 @@
-package ui
+package styles
 
 import "github.com/charmbracelet/lipgloss"
 
@@ -6,15 +6,15 @@ var (
 	docStyle = lipgloss.
 			NewStyle()
 
-	bigTitleStyle = lipgloss.
+	BigTitleStyle = lipgloss.
 			NewStyle().
 			Align(lipgloss.Center)
 
-	focusStyle = lipgloss.NewStyle().
+	FocusStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("62"))
 
-	unfocusStyle = focusStyle.
+	UnfocusStyle = FocusStyle.
 			BorderForeground(lipgloss.Color("#bababa"))
 
 	titleStyle = lipgloss.NewStyle().

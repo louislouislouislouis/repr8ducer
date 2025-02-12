@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/louislouislouislouis/repr8ducer/k8s"
-	"github.com/louislouislouislouis/repr8ducer/ui"
+	"github.com/louislouislouislouis/repr8ducer/ui/mainmodel"
 	"github.com/louislouislouislouis/repr8ducer/utils"
 )
 
@@ -56,7 +56,7 @@ func init() {
 
 func runCli(namespace, pod, container string) {
 	p := tea.NewProgram(
-		ui.NewModel(k8s.GetService(), ui.ModelConfig{
+		mainmodel.NewMainModel(k8s.GetService(), mainmodel.MainModelConfig{
 			Pod:       pod,
 			Namespace: namespace,
 			Container: container,
