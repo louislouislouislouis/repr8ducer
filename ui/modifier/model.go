@@ -26,8 +26,20 @@ func (m ModifierModel) Init() tea.Cmd {
 
 func (m ModifierModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.KeyMsg:
+
+		switch msg.String() {
+		case "left":
+			return m.handleLeftKey()
+
+		case "right":
+			return m.handleRightKey()
+		}
 	case message.UrlDetectionMsg:
+
 		m.urls = msg.Val
+
+		m.inputs = nil
 		for _, url := range m.urls {
 			input := textinput.New()
 			input.Placeholder = url
