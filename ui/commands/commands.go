@@ -5,6 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/louislouislouislouis/repr8ducer/k8s"
+	"github.com/louislouislouislouis/repr8ducer/modifiers"
 	"github.com/louislouislouislouis/repr8ducer/ui/message"
 )
 
@@ -51,6 +52,21 @@ func ChangeMainModelFocus(mode int) tea.Cmd {
 	return func() tea.Msg {
 		return message.MainModelChangeFocusMsg{
 			Val: mode,
+		}
+	}
+}
+
+func GetUrlsFromFolder(folderPath string) tea.Cmd {
+	return func() tea.Msg {
+		msgValue, err := modifiers.NewUrlReplacer().SearchUrlsInDir(folderPath)
+		if err != nil {
+			return message.UrlDetectionMsg{
+				Status: message.Error,
+			}
+		}
+		return message.UrlDetectionMsg{
+			Status: message.Ok,
+			Val:    msgValue,
 		}
 	}
 }

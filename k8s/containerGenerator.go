@@ -13,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/louislouislouislouis/repr8ducer/k8s/dkr"
-	"github.com/louislouislouislouis/repr8ducer/modifiers"
 	"github.com/louislouislouislouis/repr8ducer/utils"
 )
 
@@ -22,13 +21,20 @@ type Generator struct {
 	rootDir    string
 }
 
+type GenerationResponseStatus int
+
+const (
+	Ok GenerationResponseStatus = iota
+	Failed
+)
+
 type GenerationResponse struct {
-	Path      string
-	Modifiers []modifiers.Modifiers
+	Path   string
+	Status GenerationResponseStatus
 }
 
 func (res GenerationResponse) GetCommand() string {
-	return fmt.Sprintf("docker compose -f %s up", res.Path)
+	return fmt.Sprintf("docker compose -f %s up", fmt.Sprintf("%s/docker-compose.yaml", res.Path))
 }
 
 func NewDefaultGenerator(k8sService *K8sService) *Generator {
@@ -43,21 +49,6 @@ type containerGenerationConfig struct {
 	pod               v1.Pod
 	container         v1.Container
 	generationRootDir string
-	modifiers         []modifiers.Modifiers
-}
-
-func (c containerGenerationConfig) applyModifiersDetection(input string) error {
-	for _, modifier := range c.modifiers {
-		if err := modifier.Detect(input); err != nil {
-			return fmt.Errorf(
-				"Error trying to modify string %s with modifier %s : %v",
-				input,
-				modifier.GetName(),
-				err,
-			)
-		}
-	}
-	return nil
 }
 
 func (conf containerGenerationConfig) getVolumesBaseDir() string {
@@ -102,9 +93,6 @@ func (g *Generator) generateContainerContent(
 		NetworkMode:   "host",
 		DependsOn:     initContainers,
 		Command:       conf.container.Command,
-	}
-	for _, v := range conf.modifiers[0].GetDetections() {
-		utils.Log.Debug().Msg(conf.modifiers[0].GetDetections()[v])
 	}
 
 	return nil
@@ -339,7 +327,6 @@ func (g *Generator) generateConfigMap(
 	}
 	for key, value := range configMap.Data {
 		filePath := fmt.Sprintf("%s/%s", destFileName, key)
-		conf.applyModifiersDetection(value)
 		writeStringFile(filePath, value)
 		utils.Log.Debug().Msg(
 			fmt.Sprintf(
@@ -376,9 +363,6 @@ func (g *Generator) generateDockerComposeFile(
 	}
 
 	initContainers := make([]string, len(pod.Spec.InitContainers))
-	modifiers := []modifiers.Modifiers{
-		modifiers.NewUrlReplacer(),
-	}
 	// First generate initContainers
 	for idx, container := range pod.Spec.InitContainers {
 		g.generateContainerContent(containerGenerationConfig{
@@ -386,7 +370,6 @@ func (g *Generator) generateDockerComposeFile(
 			nms:               namespace,
 			container:         container,
 			generationRootDir: rootDir,
-			modifiers:         modifiers,
 		}, ctx, dockerFile, []string{})
 		initContainers[idx] = container.Name
 	}
@@ -398,7 +381,6 @@ func (g *Generator) generateDockerComposeFile(
 			nms:               namespace,
 			container:         container,
 			generationRootDir: rootDir,
-			modifiers:         modifiers,
 		}, ctx, dockerFile, initContainers)
 	}
 
@@ -414,8 +396,8 @@ func (g *Generator) generateDockerComposeFile(
 	}
 
 	return GenerationResponse{
-		Path:      dockerComposePathFile,
-		Modifiers: modifiers,
+		Path:   rootDir,
+		Status: Ok,
 	}, nil
 }
 
@@ -428,7 +410,7 @@ func (g *Generator) PodToContainer(
 		fmt.Sprintf("Making a pod Spec transformation to docker compose spec"),
 	)
 	if pod, err := g.k8sService.GetPod(namespace, podName, ctx); err != nil {
-		return GenerationResponse{}, fmt.Errorf("Error getting the pod %s : %v", podName, err)
+		return GenerationResponse{Status: Failed}, fmt.Errorf("Error getting the pod %s : %v", podName, err)
 	} else {
 		response, err := g.generateDockerComposeFile(*pod, namespace, ctx)
 		utils.Log.Debug().Msg(

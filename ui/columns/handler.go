@@ -9,7 +9,6 @@ import (
 	"github.com/louislouislouislouis/repr8ducer/ui/commands"
 	"github.com/louislouislouislouis/repr8ducer/ui/common"
 	"github.com/louislouislouislouis/repr8ducer/ui/message"
-	"github.com/louislouislouislouis/repr8ducer/ui/modifier"
 	statusline "github.com/louislouislouislouis/repr8ducer/ui/statusLine"
 	"github.com/louislouislouislouis/repr8ducer/utils"
 	v1 "k8s.io/api/core/v1"
@@ -53,7 +52,7 @@ func handlek8sMsg(m ColumnsModel, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case message.NamespaceMsg:
 		items := common.CreateDisplayedListFromMetadata(msg.Val.List.Items, func(nms v1.Namespace) common.DiplayableItemList {
-			return &common.DisplayableMeta{&nms.ObjectMeta}
+			return &common.DisplayableMeta{Meta: &nms.ObjectMeta}
 		})
 		m.columns[namespaceCol], cmd = m.columns[namespaceCol].Update(
 			message.ListUpdateMsg{
@@ -66,7 +65,7 @@ func handlek8sMsg(m ColumnsModel, msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case message.PodMsg:
 		items := common.CreateDisplayedListFromMetadata(msg.Val.List.Items, func(nms v1.Pod) common.DiplayableItemList {
-			return &common.DisplayableMeta{&nms.ObjectMeta}
+			return &common.DisplayableMeta{Meta: &nms.ObjectMeta}
 		})
 		m.columns[podCol], cmd = m.columns[podCol].Update(
 			message.ListUpdateMsg{
@@ -79,11 +78,11 @@ func handlek8sMsg(m ColumnsModel, msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case message.ContainerMsg:
 		items := common.CreateDisplayedListFromMetadata(msg.Val.List, func(container v1.Container) common.DiplayableItemList {
-			return &common.DisplayableContainer{container}
+			return &common.DisplayableContainer{Container: container}
 		})
 		m.columns[containerCol], cmd = m.columns[containerCol].Update(
 			message.ListUpdateMsg{
-				StatusTxt:        "hehe",
+				StatusTxt:        "Containers",
 				Title:            "Container",
 				Val:              items,
 				PreSelectedValue: msg.Val.PreSelectedContainer,
@@ -111,7 +110,7 @@ func (m ColumnsModel) handleEnterKey() (ColumnsModel, tea.Cmd) {
 			context.TODO(),
 		)
 	case containerCol:
-		command, err := m.generator.PodToContainer(
+		res, err := m.generator.PodToContainer(
 			m.columns[namespaceCol].current,
 			m.columns[podCol].current,
 			context.TODO(),
@@ -121,21 +120,8 @@ func (m ColumnsModel) handleEnterKey() (ColumnsModel, tea.Cmd) {
 			cmd = statusline.UpdateStatusLine(err.Error())
 			return m, cmd
 		}
-		clipboard.WriteAll(command.GetCommand())
-		if len(command.Modifiers) != 0 {
-			// TODO Open dialog
-			cmds := []tea.Cmd{}
-			for _, cmd := range command.Modifiers {
-				keys := make([]string, len(cmd.GetDetections()))
-				i := 0
-				for k := range cmd.GetDetections() {
-					keys[i] = k
-					i++
-				}
-				cmds = append(cmds, modifier.UpdateModifierRecap(keys), commands.ChangeMainModelFocus(1))
-			}
-			cmd = tea.Batch(cmds...)
-		}
+		clipboard.WriteAll(res.GetCommand())
+		cmd = tea.Batch(commands.GetUrlsFromFolder(res.Path), commands.ChangeMainModelFocus(1))
 
 	case namespaceCol:
 		cmd = commands.GetPodsCmd(m.columns[namespaceCol].current, "", context.TODO())

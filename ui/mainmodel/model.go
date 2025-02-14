@@ -46,7 +46,7 @@ func NewMainModel(k8sService *k8s.K8sService, c MainModelConfig) mainModel {
 		k8sService:   k8sService,
 		generator:    generator,
 		modifierView: modifier.ModifierModel{},
-		statusline:   statusline.StatusLine{"Not erer"},
+		statusline:   statusline.StatusLine{Text: "Not erer"},
 	}
 }
 

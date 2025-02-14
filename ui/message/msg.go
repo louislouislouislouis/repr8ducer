@@ -8,8 +8,8 @@ import (
 type StatusMsg int
 
 const (
-	error StatusMsg = iota
-	ok
+	Error StatusMsg = iota
+	Ok
 )
 
 type NamespaceMsgValue struct {
@@ -35,9 +35,11 @@ type InfoMsg struct {
 	Val    string
 	Status StatusMsg
 }
-
+type UrlDetectionMsgValue struct {
+	Urls []string
+}
 type UrlDetectionMsg struct {
-	Val    []string
+	Val    UrlDetectionMsgValue
 	Status StatusMsg
 }
 type PodMsg struct {
