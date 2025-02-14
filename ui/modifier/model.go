@@ -4,21 +4,19 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/louislouislouislouis/repr8ducer/ui/commands"
 	"github.com/louislouislouislouis/repr8ducer/ui/message"
 	"github.com/louislouislouislouis/repr8ducer/ui/styles"
 )
 
 type ModifierModel struct {
+	basePath        string
 	IsActive        bool
-	urlDetectionMsg []string
 	inputs          []textinput.Model
 	inputIdxFocused int
-	cursorMode      cursor.Model
-	urls            []string
 	override        bool
 	mode            modifierMode
 }
@@ -32,6 +30,14 @@ const (
 
 func (m ModifierModel) Init() tea.Cmd {
 	return nil
+}
+
+func (m ModifierModel) getUrlsMapping() map[string]string {
+	urlMapping := make(map[string]string, len(m.inputs))
+	for _, input := range m.inputs {
+		urlMapping[input.Placeholder] = input.Value()
+	}
+	return urlMapping
 }
 
 func (m ModifierModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -81,7 +87,7 @@ func (m ModifierModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				s := msg.String()
 
 				if s == "enter" && m.inputIdxFocused == len(m.inputs)-1 {
-					return m, tea.Quit
+					return m, commands.SetUrlsFromFolder(m.basePath, m.getUrlsMapping())
 				}
 
 				// Cycle indexes
@@ -116,8 +122,10 @@ func (m ModifierModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+	case message.UrlReplacementMsg:
+		return m, tea.Quit
 	case message.UrlDetectionMsg:
-
+		m.basePath = msg.Val.BasePath
 		m.inputs = make([]textinput.Model, len(msg.Val.Urls))
 		for i, url := range msg.Val.Urls {
 			input := textinput.New()

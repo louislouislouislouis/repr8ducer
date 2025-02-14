@@ -60,13 +60,29 @@ func GetUrlsFromFolder(folderPath string) tea.Cmd {
 	return func() tea.Msg {
 		msgValue, err := modifiers.NewUrlReplacer().SearchUrlsInDir(folderPath)
 		if err != nil {
-			return message.UrlDetectionMsg{
+			return message.InfoMsg{
 				Status: message.Error,
+				Val:    err.Error(),
 			}
 		}
 		return message.UrlDetectionMsg{
 			Status: message.Ok,
 			Val:    msgValue,
+		}
+	}
+}
+
+func SetUrlsFromFolder(folderPath string, urls map[string]string) tea.Cmd {
+	return func() tea.Msg {
+		err := modifiers.NewUrlReplacer().ReplaceUrlsInDir(folderPath, urls)
+		if err != nil {
+			return message.UrlReplacementMsg{
+				Status:   message.Error,
+				ErrorMsg: err.Error(),
+			}
+		}
+		return message.UrlReplacementMsg{
+			Status: message.Ok,
 		}
 	}
 }

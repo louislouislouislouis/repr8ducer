@@ -34,7 +34,7 @@ type GenerationResponse struct {
 }
 
 func (res GenerationResponse) GetCommand() string {
-	return fmt.Sprintf("docker compose -f %s up", fmt.Sprintf("%s/docker-compose.yaml", res.Path))
+	return fmt.Sprintf("docker compose -f %s up", fmt.Sprintf("%s/docker-compose.yml", res.Path))
 }
 
 func NewDefaultGenerator(k8sService *K8sService) *Generator {

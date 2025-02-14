@@ -36,11 +36,16 @@ type InfoMsg struct {
 	Status StatusMsg
 }
 type UrlDetectionMsgValue struct {
-	Urls []string
+	Urls     []string
+	BasePath string
 }
 type UrlDetectionMsg struct {
 	Val    UrlDetectionMsgValue
 	Status StatusMsg
+}
+type UrlReplacementMsg struct {
+	Status   StatusMsg
+	ErrorMsg string
 }
 type PodMsg struct {
 	Val    PodMsgValue

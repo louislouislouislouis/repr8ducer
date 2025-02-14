@@ -59,7 +59,8 @@ func (u *urlReplacer) SearchUrlsInDir(dirPath string) (message.UrlDetectionMsgVa
 	}
 
 	return message.UrlDetectionMsgValue{
-		Urls: keys,
+		Urls:     keys,
+		BasePath: dirPath,
 	}, nil
 }
 
