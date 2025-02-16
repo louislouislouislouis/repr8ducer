@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
@@ -11,6 +12,8 @@ import (
 	"github.com/louislouislouislouis/repr8ducer/k8s"
 	"github.com/louislouislouislouis/repr8ducer/ui/commands"
 	"github.com/louislouislouislouis/repr8ducer/ui/message"
+	statusline "github.com/louislouislouislouis/repr8ducer/ui/statusLine"
+	"github.com/louislouislouislouis/repr8ducer/utils"
 )
 
 const numberOfColums = 3
@@ -64,6 +67,7 @@ func NewColumnsModel(namespace, pod, container string, generator *k8s.Generator)
 
 func (m ColumnsModel) Init() tea.Cmd {
 	var initCmd []tea.Cmd
+
 	if m.columns[namespaceCol].current != "" {
 		initCmd = append(
 			initCmd,
@@ -79,7 +83,24 @@ func (m ColumnsModel) Init() tea.Cmd {
 					context.TODO(),
 				),
 			)
+			// All arguments have been provided
+			if m.columns[containerCol].current != "" {
+				// initCmd = append(initCmd, command)
+
+				res, err := m.generator.PodToContainer(
+					m.columns[namespaceCol].current,
+					m.columns[podCol].current,
+					context.TODO(),
+				)
+				if err != nil {
+					utils.Log.Error().Msg(err.Error())
+					initCmd = append(initCmd, statusline.UpdateStatusLine(err.Error()))
+				}
+				clipboard.WriteAll(res.GetCommand())
+				initCmd = append(initCmd, tea.Batch(commands.GetUrlsFromFolder(res.Path), commands.ChangeMainModelFocus(1)))
+			}
 		}
+
 	}
 
 	initCmd = append(

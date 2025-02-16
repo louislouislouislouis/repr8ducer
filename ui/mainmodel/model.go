@@ -20,16 +20,18 @@ type itemWithList struct {
 }
 
 type mainModel struct {
-	width        int
-	colView      columns.ColumnsModel
-	modifierView modifier.ModifierModel
-	statusline   statusline.StatusLine
-	k8sService   *k8s.K8sService
-	generator    *k8s.Generator
+	width            int
+	colView          columns.ColumnsModel
+	modifierView     modifier.ModifierModel
+	statusline       statusline.StatusLine
+	k8sService       *k8s.K8sService
+	generator        *k8s.Generator
+	SkipUrlOverwrite bool
 }
 
 type MainModelConfig struct {
 	Namespace, Pod, Container string
+	SkipUrlOverwrite          bool
 }
 
 type MainModelMode int
@@ -42,11 +44,12 @@ const (
 func NewMainModel(k8sService *k8s.K8sService, c MainModelConfig) mainModel {
 	generator := k8s.NewDefaultGenerator(k8sService)
 	return mainModel{
-		colView:      columns.NewColumnsModel(c.Namespace, c.Pod, c.Container, generator),
-		k8sService:   k8sService,
-		generator:    generator,
-		modifierView: modifier.ModifierModel{},
-		statusline:   statusline.StatusLine{Text: "Not erer"},
+		colView:          columns.NewColumnsModel(c.Namespace, c.Pod, c.Container, generator),
+		k8sService:       k8sService,
+		generator:        generator,
+		modifierView:     modifier.ModifierModel{},
+		statusline:       statusline.StatusLine{Text: "Everything is good until now"},
+		SkipUrlOverwrite: c.SkipUrlOverwrite,
 	}
 }
 
@@ -86,6 +89,11 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	case message.MainModelChangeFocusMsg:
 		m = m.setFocus(MainModelMode(msg.Val))
+		if m.SkipUrlOverwrite {
+			if _, mode := m.getFocusPart(); mode == modifierView {
+				return m, tea.Quit
+			}
+		}
 		return m, nil
 	}
 	switch mode {

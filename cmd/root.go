@@ -14,7 +14,7 @@ var (
 	userLicense string
 
 	rootCmd = &cobra.Command{
-		Use:   "repro8ducer",
+		Use:   "repr8ducer",
 		Short: "A generator for kubernetes based Applications",
 		Long: `Repr8ducer is a CLI interface for k8s that empowers applications.
 This application is a tool to generate the needed files

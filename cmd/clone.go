@@ -14,9 +14,10 @@ import (
 )
 
 var (
-	namespace string
-	podName   string
-	container string
+	namespace    string
+	podName      string
+	container    string
+	overrideUrls bool
 )
 
 var cloneCmd = &cobra.Command{
@@ -24,8 +25,8 @@ var cloneCmd = &cobra.Command{
 	Short: "Reproduce specific pod",
 	Long:  "Copy the specific docker command in your keyboard",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Directly output command if all args are here
-		if namespace != "" && podName != "" && container != "" {
+		// Directly output command if all args are here, and skip url overwrite
+		if namespace != "" && podName != "" && container != "" && overrideUrls {
 			command, err := k8s.NewDefaultGenerator(k8s.GetService()).PodToContainer(
 				namespace,
 				podName,
@@ -39,7 +40,7 @@ var cloneCmd = &cobra.Command{
 			return
 		}
 		// Otherwise return cli
-		runCli(namespace, podName, container)
+		runCli(namespace, podName, container, overrideUrls)
 	},
 }
 
@@ -50,16 +51,69 @@ func init() {
 		StringVarP(&podName, "podName", "p", "", "Podname to work replicate")
 	cloneCmd.PersistentFlags().
 		StringVarP(&container, "container", "c", "", "Container to work replicate")
+	cloneCmd.Flags().BoolVar(&overrideUrls, "no-url-overwrite", false, "Override Urls in generated file")
+	cloneCmd.RegisterFlagCompletionFunc("namespace", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		namespacesList, err := k8s.GetService().ListNamespace(context.Background())
+		if err != nil {
+			return []string{}, cobra.ShellCompDirectiveError
+		}
+		namespaces := make([]string, len(namespacesList.Items))
+		for idx, namespace := range namespacesList.Items {
+			namespaces[idx] = namespace.Name
+		}
 
+		return namespaces, cobra.ShellCompDirectiveDefault
+	})
+
+	cloneCmd.RegisterFlagCompletionFunc("podName", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		flags := cmd.Flags()
+		namespace, err := flags.GetString("namespace")
+		if err != nil {
+			return []string{}, cobra.ShellCompDirectiveError
+		}
+		podList, err := k8s.GetService().ListPodsInNamespace(namespace, context.TODO())
+		if err != nil {
+			return []string{}, cobra.ShellCompDirectiveError
+		}
+
+		pods := make([]string, len(podList.Items))
+		for idx, pod := range podList.Items {
+			pods[idx] = pod.Name
+		}
+		return pods, cobra.ShellCompDirectiveDefault
+	})
+
+	cloneCmd.RegisterFlagCompletionFunc("container", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		flags := cmd.Flags()
+		namespace, err := flags.GetString("namespace")
+		if err != nil {
+			return []string{}, cobra.ShellCompDirectiveError
+		}
+		podName, err := flags.GetString("podName")
+		if err != nil {
+			return []string{}, cobra.ShellCompDirectiveError
+		}
+		containers, err := k8s.GetService().GetContainerFromPods(namespace, podName, context.TODO())
+		if err != nil {
+			return []string{}, cobra.ShellCompDirectiveError
+		}
+
+		containersCompletion := make([]string, len(containers))
+		for idx, container := range containers {
+			containersCompletion[idx] = container.Name
+		}
+		return containersCompletion, cobra.ShellCompDirectiveDefault
+	})
 	rootCmd.AddCommand(cloneCmd)
 }
 
-func runCli(namespace, pod, container string) {
+func runCli(namespace, pod, container string, skipUrlOverwrite bool) {
 	p := tea.NewProgram(
 		mainmodel.NewMainModel(k8s.GetService(), mainmodel.MainModelConfig{
-			Pod:       pod,
-			Namespace: namespace,
-			Container: container,
+			Pod:              pod,
+			Namespace:        namespace,
+			Container:        container,
+			SkipUrlOverwrite: skipUrlOverwrite,
 		}),
 		tea.WithAltScreen(),
 	)

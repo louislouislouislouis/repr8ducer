@@ -11,11 +11,6 @@ func TestListNamespace(t *testing.T) {
 
 func TestGetContainer(t *testing.T) {
 	k8s := GetService()
-	liste, _ := k8s.ListNamespace()
+	liste, _ := k8s.ListNamespace(context.Background())
 	t.Log(liste.Items)
-}
-
-func TestGetVolumes(t *testing.T) {
-	k8s := GetService()
-	k8s.PodToContainer("kiwios-cloud-metering", "metering-dc5654c89-hxqjq", context.TODO())
 }
